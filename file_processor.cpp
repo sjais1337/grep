@@ -147,8 +147,10 @@ void execute_search(const string& filename, const Config& config, Shared& data) 
     data.total_occ += count;
     data_lock.unlock();
     
-    data.log_queue.push("Found " + to_string(count) + " occurrences in " + filename);
-    data.log_queue.push("Processed " + filename + " in " + to_string(duration) + " ms");
+    if(!config.quiet) {
+        data.log_queue.push("Found " + to_string(count) + " occurrences in " + filename);
+        data.log_queue.push("Processed " + filename + " in " + to_string(duration) + " ms");
+    }
 }
 
 

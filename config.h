@@ -11,4 +11,5 @@ struct Config {
   bool line_number = false;
   bool invert_match = false;
   bool replace_mode = false;
+  bool quiet = false;
 };

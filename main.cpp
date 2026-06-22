@@ -23,6 +23,7 @@ void print_usage(const string& program_name)
     Logger::getInstance().logError("   -i, --ignore-case      Perform case-insensitive matching.");
     Logger::getInstance().logError("   -n, --line-number      Prefix each line of output with its line number.");
     Logger::getInstance().logError("   -v, --invert-match     Select non-matching lines.");
+    Logger::getInstance().logError("   -q, --quiet            Suppress progress reporting.");
     Logger::getInstance().logError("   -h, --help             Display this help message.");
 }
 
@@ -45,6 +46,16 @@ void reporter(Shared& data){
 
 int main(int argc, char* argv[])
 {
+    for(int i = 1; i < argc; ++i)
+    {
+        string arg = argv[i];
+        if(arg == "-h" || arg == "--help")
+        {
+            print_usage(argv[0]);
+            return 0;
+        }
+    }
+
     if(argc < 3)
     {
         print_usage(argv[0]);
@@ -74,6 +85,10 @@ int main(int argc, char* argv[])
             } 
             else if (arg == "-v" || arg == "--invert-match") {
                 config.invert_match = true;
+                i++;
+            }
+            else if (arg == "-q" || arg == "--quiet") {
+                config.quiet = true;
                 i++;
             } 
             else if (arg == "-r" || arg == "--replace") {
@@ -111,7 +126,11 @@ int main(int argc, char* argv[])
     Shared shared_data;
 
     thread consumer_thread(log_consumer, ref(shared_data.log_queue));
-    thread reporter_thread(reporter, ref(shared_data));
+    thread reporter_thread;
+
+    if(!config.quiet) {
+        reporter_thread = thread(reporter, ref(shared_data));
+    }
 
     if(config.replace_mode)
     {
@@ -161,8 +180,13 @@ int main(int argc, char* argv[])
     auto end_pool = chrono::high_resolution_clock::now();
     
     chrono::duration<double, milli> elapsed = end_pool - start_pool;
-    shared_data.log_queue.push("Total occurrences found: " + std::to_string(shared_data.total_occ));
-    shared_data.log_queue.push("Finished processing files in " + std::to_string(elapsed.count()) + " ms.");
+    if(!config.quiet) {
+        shared_data.log_queue.push("Total occurrences found: " + std::to_string(shared_data.total_occ));
+        shared_data.log_queue.push("Finished processing files in " + std::to_string(elapsed.count()) + " ms.");
+    } else {
+        cout << "MATCH_COUNT=" << shared_data.total_occ << "\n";
+        cout << "TIME_MS=" << elapsed.count() << "\n";
+    }
 
     shared_data.log_queue.shutdown();
 
